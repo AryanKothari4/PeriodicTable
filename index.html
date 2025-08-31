@@ -9,8 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
         :root {
-            /* UPDATED: Changed green to a vibrant yellow for better visibility */
-            --correct-color: #FFD600; 
+            --correct-color: #FFD600;
             --incorrect-color: #F44336;
         }
 
@@ -49,17 +48,18 @@
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        h1 {
-            margin-bottom: 10px;
+        h1, h2 {
             font-weight: 600;
         }
+        
+        h1 { margin-bottom: 10px; }
 
-        #progress-counter {
+        #progress-counter, .setup-description {
             margin-bottom: 30px;
             font-weight: 300;
             opacity: 0.8;
         }
-
+        
         #question-prompt {
             font-size: 1.2rem;
             margin-bottom: 10px;
@@ -68,7 +68,6 @@
 
         #question-element {
             font-size: 3rem;
-            font-weight: 600;
             margin-bottom: 30px;
             min-height: 60px; /* Prevent layout shift */
         }
@@ -80,6 +79,10 @@
 
         #answer-input {
             flex-grow: 1;
+        }
+
+        /* Shared styles for input and select */
+        #answer-input, .range-selector select {
             padding: 15px;
             font-size: 1rem;
             border-radius: 8px;
@@ -88,16 +91,41 @@
             color: #fff;
             outline: none;
             transition: all 0.2s ease;
+            font-family: 'Poppins', sans-serif;
         }
 
-        #answer-input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
+        #answer-input::placeholder { color: rgba(255, 255, 255, 0.6); }
 
-        #answer-input:focus {
+        #answer-input:focus, .range-selector select:focus {
             background: rgba(255, 255, 255, 0.3);
             border-color: rgba(255, 255, 255, 0.8);
         }
+        
+        /* Specific styles for select */
+        .range-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .range-selector > div {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+        .range-selector label {
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .range-selector select {
+            width: 100%;
+        }
+        .range-selector select option {
+            background: #6a5acd; /* A dark color for dropdown options */
+            color: #fff;
+        }
+
 
         button {
             padding: 15px 25px;
@@ -109,7 +137,10 @@
             color: #667eea;
             cursor: pointer;
             transition: all 0.2s ease;
+            width: 100%;
         }
+        
+        .input-group button { width: auto; }
 
         button:hover {
             background: #f0f0f0;
@@ -126,7 +157,6 @@
         .correct {
             color: var(--correct-color);
             animation: fadeIn 0.5s;
-            /* UPDATED: Added a text shadow to make it pop even more */
             text-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
         }
 
@@ -135,8 +165,12 @@
             animation: shake 0.5s;
         }
         
+        /* Initially hide the quiz and completion screens */
+        #quiz-box, #completion-screen {
+            display: none;
+        }
+
         #completion-screen {
-            display: none; /* Hidden by default */
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -153,11 +187,7 @@
         }
 
         /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -167,29 +197,44 @@
 </head>
 <body>
 
+    <div class="quiz-container" id="selection-container">
+        <h1>Customize Your Quiz</h1>
+        <p class="setup-description">Select the range of elements you want to review.</p>
+        <form id="start-quiz-form">
+            <div class="range-selector">
+                <div>
+                    <label for="start-element-select">Start Element</label>
+                    <select id="start-element-select"></select>
+                </div>
+                <div>
+                    <label for="end-element-select">End Element</label>
+                    <select id="end-element-select"></select>
+                </div>
+            </div>
+            <button type="submit">Start Quiz</button>
+        </form>
+    </div>
+
     <div class="quiz-container" id="quiz-box">
         <h1>Periodic Table Quiz</h1>
         <p id="progress-counter"></p>
-        
         <div id="question-area">
             <p id="question-prompt"></p>
             <h2 id="question-element"></h2>
         </div>
-        
         <form id="answer-form">
             <div class="input-group">
                 <input type="text" id="answer-input" placeholder="Type your answer..." autocomplete="off" autofocus>
                 <button type="submit">Check</button>
             </div>
         </form>
-        
         <p id="feedback-message"></p>
     </div>
 
     <div class="quiz-container" id="completion-screen">
         <h2>Congratulations!</h2>
-        <p>You've reviewed all the elements.</p>
-        <button id="restart-button">Start Over</button>
+        <p>You've reviewed all the selected elements.</p>
+        <button id="restart-button">Quiz Again</button>
     </div>
 
     <script>
@@ -228,6 +273,11 @@
         ];
 
         // --- DOM Elements ---
+        const selectionContainer = document.getElementById('selection-container');
+        const startQuizForm = document.getElementById('start-quiz-form');
+        const startSelect = document.getElementById('start-element-select');
+        const endSelect = document.getElementById('end-element-select');
+        
         const quizBox = document.getElementById('quiz-box');
         const completionScreen = document.getElementById('completion-screen');
         const progressCounter = document.getElementById('progress-counter');
@@ -242,14 +292,45 @@
         let quizElements = [];
         let currentElement = null;
         let questionType = 'name'; // 'name' or 'symbol'
-        const totalElements = elements.length;
+        let totalElementsInQuiz = 0;
 
         // --- Functions ---
-        function startGame() {
-            // Create a copy of the elements array to use for the quiz
-            quizElements = [...elements];
+        function populateDropdowns() {
+            elements.forEach((el, index) => {
+                const optionText = `${index + 1}. ${el.name} (${el.symbol})`;
+                const startOption = new Option(optionText, index);
+                const endOption = new Option(optionText, index);
+                startSelect.add(startOption);
+                endSelect.add(endOption);
+            });
+            // Set default end element to the last one
+            endSelect.value = elements.length - 1;
+        }
+
+        function handleQuizStart(event) {
+            event.preventDefault();
+            let startIndex = parseInt(startSelect.value);
+            let endIndex = parseInt(endSelect.value);
+
+            // If user picks an end element before the start, swap them
+            if (startIndex > endIndex) {
+                [startIndex, endIndex] = [endIndex, startIndex];
+            }
+            
+            // Slice the elements array to get the user's selected range
+            const selectedElements = elements.slice(startIndex, endIndex + 1);
+            
+            startGame(selectedElements);
+        }
+
+        function startGame(selectedElements) {
+            quizElements = [...selectedElements];
+            totalElementsInQuiz = selectedElements.length;
+            
+            selectionContainer.style.display = 'none';
             completionScreen.style.display = 'none';
             quizBox.style.display = 'block';
+            
             nextQuestion();
         }
 
@@ -259,19 +340,15 @@
                 return;
             }
 
-            // Clear previous feedback
             feedbackMessage.textContent = '';
             feedbackMessage.className = '';
             answerInput.value = '';
 
-            // Update progress
-            progressCounter.textContent = `${quizElements.length} / ${totalElements} elements remaining`;
+            progressCounter.textContent = `${quizElements.length} / ${totalElementsInQuiz} elements remaining`;
 
-            // Pick a random element from the remaining pool
             const randomIndex = Math.floor(Math.random() * quizElements.length);
             currentElement = quizElements[randomIndex];
 
-            // Randomly choose question type
             questionType = Math.random() < 0.5 ? 'name' : 'symbol';
 
             if (questionType === 'name') {
@@ -286,10 +363,9 @@
         }
 
         function checkAnswer(event) {
-            event.preventDefault(); // Prevent form from reloading the page
+            event.preventDefault();
             const userAnswer = answerInput.value.trim();
-
-            if (!userAnswer) return; // Ignore empty submissions
+            if (!userAnswer) return;
 
             let isCorrect = false;
             if (questionType === 'name') {
@@ -301,23 +377,18 @@
             if (isCorrect) {
                 feedbackMessage.textContent = 'Correct!';
                 feedbackMessage.className = 'correct';
-
-                // Remove the correctly answered element from the quiz pool
                 quizElements = quizElements.filter(el => el.symbol !== currentElement.symbol);
-                
-                // Move to the next question after a short delay
                 setTimeout(nextQuestion, 1000);
             } else {
                 feedbackMessage.textContent = `Incorrect. The correct answer for ${currentElement.name} (${currentElement.symbol}) was not ${userAnswer}.`;
                 feedbackMessage.className = 'incorrect';
                 answerInput.classList.add('incorrect');
                 
-                // Clear the input and shake it after a delay so they can try again
                 setTimeout(() => {
                     answerInput.value = '';
                     answerInput.classList.remove('incorrect');
                     answerInput.focus();
-                }, 2000); // Increased delay to read the full message
+                }, 2000);
             }
         }
         
@@ -325,13 +396,19 @@
             quizBox.style.display = 'none';
             completionScreen.style.display = 'flex';
         }
+        
+        function resetToSelection() {
+            completionScreen.style.display = 'none';
+            selectionContainer.style.display = 'block';
+        }
 
         // --- Event Listeners ---
+        startQuizForm.addEventListener('submit', handleQuizStart);
         answerForm.addEventListener('submit', checkAnswer);
-        restartButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', resetToSelection);
 
         // --- Initial Call ---
-        startGame();
+        populateDropdowns();
 
     </script>
 </body>
