@@ -9,7 +9,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
         :root {
-            --correct-color: #4CAF50;
+            /* UPDATED: Changed green to a vibrant yellow for better visibility */
+            --correct-color: #FFD600; 
             --incorrect-color: #F44336;
         }
 
@@ -125,6 +126,8 @@
         .correct {
             color: var(--correct-color);
             animation: fadeIn 0.5s;
+            /* UPDATED: Added a text shadow to make it pop even more */
+            text-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
         }
 
         .incorrect {
