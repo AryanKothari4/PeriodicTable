@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodic Table Quiz</title>
+    <style>
+        /* Import a nice font */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --correct-color: #4CAF50;
+            --incorrect-color: #F44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            
+            /* Glassmorphism Effect */
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            
+            text-align: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        #progress-counter {
+            margin-bottom: 30px;
+            font-weight: 300;
+            opacity: 0.8;
+        }
+
+        #question-prompt {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        #question-element {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            min-height: 60px; /* Prevent layout shift */
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        #answer-input {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        #answer-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #answer-input:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        button {
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            background: #fff;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        #feedback-message {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 25px; /* Prevent layout shift */
+            font-weight: 600;
+        }
+
+        .correct {
+            color: var(--correct-color);
+            animation: fadeIn 0.5s;
+        }
+
+        .incorrect {
+            color: var(--incorrect-color);
+            animation: shake 0.5s;
+        }
+        
+        #completion-screen {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #completion-screen h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        
+        #completion-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-box">
+        <h1>Periodic Table Quiz</h1>
+        <p id="progress-counter"></p>
+        
+        <div id="question-area">
+            <p id="question-prompt"></p>
+            <h2 id="question-element"></h2>
+        </div>
+        
+        <form id="answer-form">
+            <div class="input-group">
+                <input type="text" id="answer-input" placeholder="Type your answer..." autocomplete="off" autofocus>
+                <button type="submit">Check</button>
+            </div>
+        </form>
+        
+        <p id="feedback-message"></p>
+    </div>
+
+    <div class="quiz-container" id="completion-screen">
+        <h2>Congratulations!</h2>
+        <p>You've reviewed all the elements.</p>
+        <button id="restart-button">Start Over</button>
+    </div>
+
+    <script>
+        const elements = [
+            { name: "Hydrogen", symbol: "H" }, { name: "Helium", symbol: "He" }, { name: "Lithium", symbol: "Li" },
+            { name: "Beryllium", symbol: "Be" }, { name: "Boron", symbol: "B" }, { name: "Carbon", symbol: "C" },
+            { name: "Nitrogen", symbol: "N" }, { name: "Oxygen", symbol: "O" }, { name: "Fluorine", symbol: "F" },
+            { name: "Neon", symbol: "Ne" }, { name: "Sodium", symbol: "Na" }, { name: "Magnesium", symbol: "Mg" },
+            { name: "Aluminum", symbol: "Al" }, { name: "Silicon", symbol: "Si" }, { name: "Phosphorus", symbol: "P" },
+            { name: "Sulfur", symbol: "S" }, { name: "Chlorine", symbol: "Cl" }, { name: "Argon", symbol: "Ar" },
+            { name: "Potassium", symbol: "K" }, { name: "Calcium", symbol: "Ca" }, { name: "Scandium", symbol: "Sc" },
+            { name: "Titanium", symbol: "Ti" }, { name: "Vanadium", symbol: "V" }, { name: "Chromium", symbol: "Cr" },
+            { name: "Manganese", symbol: "Mn" }, { name: "Iron", symbol: "Fe" }, { name: "Cobalt", symbol: "Co" },
+            { name: "Nickel", symbol: "Ni" }, { name: "Copper", symbol: "Cu" }, { name: "Zinc", symbol: "Zn" },
+            { name: "Gallium", symbol: "Ga" }, { name: "Germanium", symbol: "Ge" }, { name: "Arsenic", symbol: "As" },
+            { name: "Selenium", symbol: "Se" }, { name: "Bromine", symbol: "Br" }, { name: "Krypton", symbol: "Kr" },
+            { name: "Rubidium", symbol: "Rb" }, { name: "Strontium", symbol: "Sr" }, { name: "Yttrium", symbol: "Y" },
+            { name: "Zirconium", symbol: "Zr" }, { name: "Niobium", symbol: "Nb" }, { name: "Molybdenum", symbol: "Mo" },
+            { name: "Technetium", symbol: "Tc" }, { name: "Ruthenium", symbol: "Ru" }, { name: "Rhodium", symbol: "Rh" },
+            { name: "Palladium", symbol: "Pd" }, { name: "Silver", symbol: "Ag" }, { name: "Cadmium", symbol: "Cd" },
+            { name: "Indium", symbol: "In" }, { name: "Tin", symbol: "Sn" }, { name: "Antimony", symbol: "Sb" },
+            { name: "Tellurium", symbol: "Te" }, { name: "Iodine", symbol: "I" }, { name: "Xenon", symbol: "Xe" },
+            { name: "Caesium", symbol: "Cs" }, { name: "Barium", symbol: "Ba" }, { name: "Lanthanum", symbol: "La" },
+            { name: "Cerium", symbol: "Ce" }, { name: "Praseodymium", symbol: "Pr" }, { name: "Neodymium", symbol: "Nd" },
+            { name: "Promethium", symbol: "Pm" }, { name: "Samarium", symbol: "Sm" }, { name: "Europium", symbol: "Eu" },
+            { name: "Gadolinium", symbol: "Gd" }, { name: "Terbium", symbol: "Tb" }, { name: "Dysprosium", symbol: "Dy" },
+            { name: "Holmium", symbol: "Ho" }, { name: "Erbium", symbol: "Er" }, { name: "Thulium", symbol: "Tm" },
+            { name: "Ytterbium", symbol: "Yb" }, { name: "Lutetium", symbol: "Lu" }, { name: "Hafnium", symbol: "Hf" },
+            { name: "Tantalum", symbol: "Ta" }, { name: "Tungsten", symbol: "W" }, { name: "Rhenium", symbol: "Re" },
+            { name: "Osmium", symbol: "Os" }, { name: "Iridium", symbol: "Ir" }, { name: "Platinum", symbol: "Pt" },
+            { name: "Gold", symbol: "Au" }, { name: "Mercury", symbol: "Hg" }, { name: "Thallium", symbol: "Tl" },
+            { name: "Lead", symbol: "Pb" }, { name: "Bismuth", symbol: "Bi" }, { name: "Polonium", symbol: "Po" },
+            { name: "Astatine", symbol: "At" }, { name: "Radon", symbol: "Rn" }, { name: "Francium", symbol: "Fr" },
+            { name: "Radium", symbol: "Ra" }, { name: "Actinium", symbol: "Ac" }, { name: "Thorium", symbol: "Th" },
+            { name: "Protactinium", symbol: "Pa" }, { name: "Uranium", symbol: "U" }
+        ];
+
+        // --- DOM Elements ---
+        const quizBox = document.getElementById('quiz-box');
+        const completionScreen = document.getElementById('completion-screen');
+        const progressCounter = document.getElementById('progress-counter');
+        const questionPrompt = document.getElementById('question-prompt');
+        const questionElement = document.getElementById('question-element');
+        const answerForm = document.getElementById('answer-form');
+        const answerInput = document.getElementById('answer-input');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const restartButton = document.getElementById('restart-button');
+
+        // --- State Variables ---
+        let quizElements = [];
+        let currentElement = null;
+        let questionType = 'name'; // 'name' or 'symbol'
+        const totalElements = elements.length;
+
+        // --- Functions ---
+        function startGame() {
+            // Create a copy of the elements array to use for the quiz
+            quizElements = [...elements];
+            completionScreen.style.display = 'none';
+            quizBox.style.display = 'block';
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (quizElements.length === 0) {
+                endGame();
+                return;
+            }
+
+            // Clear previous feedback
+            feedbackMessage.textContent = '';
+            feedbackMessage.className = '';
+            answerInput.value = '';
+
+            // Update progress
+            progressCounter.textContent = `${quizElements.length} / ${totalElements} elements remaining`;
+
+            // Pick a random element from the remaining pool
+            const randomIndex = Math.floor(Math.random() * quizElements.length);
+            currentElement = quizElements[randomIndex];
+
+            // Randomly choose question type
+            questionType = Math.random() < 0.5 ? 'name' : 'symbol';
+
+            if (questionType === 'name') {
+                questionPrompt.textContent = 'What is the symbol for...';
+                questionElement.textContent = currentElement.name;
+            } else {
+                questionPrompt.textContent = 'What is the name for...';
+                questionElement.textContent = currentElement.symbol;
+            }
+            
+            answerInput.focus();
+        }
+
+        function checkAnswer(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            const userAnswer = answerInput.value.trim();
+
+            if (!userAnswer) return; // Ignore empty submissions
+
+            let isCorrect = false;
+            if (questionType === 'name') {
+                isCorrect = userAnswer.toLowerCase() === currentElement.symbol.toLowerCase();
+            } else {
+                isCorrect = userAnswer.toLowerCase() === currentElement.name.toLowerCase();
+            }
+
+            if (isCorrect) {
+                feedbackMessage.textContent = 'Correct!';
+                feedbackMessage.className = 'correct';
+
+                // Remove the correctly answered element from the quiz pool
+                quizElements = quizElements.filter(el => el.symbol !== currentElement.symbol);
+                
+                // Move to the next question after a short delay
+                setTimeout(nextQuestion, 1000);
+            } else {
+                feedbackMessage.textContent = `Incorrect. The correct answer for ${currentElement.name} (${currentElement.symbol}) was not ${userAnswer}.`;
+                feedbackMessage.className = 'incorrect';
+                answerInput.classList.add('incorrect');
+                
+                // Clear the input and shake it after a delay so they can try again
+                setTimeout(() => {
+                    answerInput.value = '';
+                    answerInput.classList.remove('incorrect');
+                    answerInput.focus();
+                }, 2000); // Increased delay to read the full message
+            }
+        }
+        
+        function endGame() {
+            quizBox.style.display = 'none';
+            completionScreen.style.display = 'flex';
+        }
+
+        // --- Event Listeners ---
+        answerForm.addEventListener('submit', checkAnswer);
+        restartButton.addEventListener('click', startGame);
+
+        // --- Initial Call ---
+        startGame();
+
+    </script>
+</body>
+</html>
