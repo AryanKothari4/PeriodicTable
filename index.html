@@ -9,8 +9,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
         :root {
-            --correct-color: #2ecc71; /* A nice, vibrant green */
-            --incorrect-color: #e74c3c; /* A slightly softer red */
+            --correct-color: #2ecc71;
+            --incorrect-color: #e74c3c;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -76,33 +76,21 @@
         button { padding: 15px 25px; font-size: 1rem; font-weight: 600; border: none; border-radius: 8px; background: #fff; color: #667eea; cursor: pointer; transition: all 0.2s ease; width: 100%; }
         .input-group button { width: auto; }
         button:hover { background: #f0f0f0; transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: translateY(0); }
+        
+        #hint-button { background: transparent; border: 1px solid rgba(255, 255, 255, 0.6); color: #fff; width: auto; padding: 15px; }
+        #hint-button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); }
 
         #feedback-message { min-height: 40px; display: flex; justify-content: center; align-items: center; margin-top: 20px; font-weight: 600; }
-        
-        /* NEW STYLES for high-contrast correct message */
-        .correct {
-            color: var(--correct-color);
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 5px 15px;
-            border-radius: 8px;
-            animation: fadeIn 0.3s;
-        }
-
+        .correct { color: var(--correct-color); background-color: rgba(0, 0, 0, 0.6); padding: 5px 15px; border-radius: 8px; animation: fadeIn 0.3s; }
         .incorrect { color: var(--incorrect-color); }
-        
-        #continue-prompt {
-            display: none; /* Hidden by default */
-            margin-top: 15px;
-            font-size: 0.9rem;
-            opacity: 0.7;
-            animation: fadeIn 0.5s;
-        }
+        .hint-message { font-size: 0.9rem; opacity: 0.8; font-weight: 400; }
 
+        #continue-prompt { display: none; margin-top: 15px; font-size: 0.9rem; opacity: 0.7; animation: fadeIn 0.5s; }
         #quiz-box, #completion-screen { display: none; }
         #completion-screen { flex-direction: column; align-items: center; justify-content: center; }
         #completion-screen h2 { font-size: 2.5rem; margin-bottom: 20px; }
         #completion-screen p { font-size: 1.2rem; margin-bottom: 30px; }
-
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
@@ -138,6 +126,7 @@
         <form id="answer-form">
             <div class="input-group">
                 <input type="text" id="answer-input" placeholder="Type your answer..." autocomplete="off" autofocus>
+                <button type="button" id="hint-button">Hint</button>
                 <button type="submit" id="check-button">Check</button>
             </div>
         </form>
@@ -152,49 +141,24 @@
     </div>
 
     <script>
-        const elements = [
-            { name: "Hydrogen", symbol: "H" }, { name: "Helium", symbol: "He" }, { name: "Lithium", symbol: "Li" }, { name: "Beryllium", symbol: "Be" }, { name: "Boron", symbol: "B" }, { name: "Carbon", symbol: "C" }, { name: "Nitrogen", symbol: "N" }, { name: "Oxygen", symbol: "O" }, { name: "Fluorine", symbol: "F" }, { name: "Neon", symbol: "Ne" }, { name: "Sodium", symbol: "Na" }, { name: "Magnesium", symbol: "Mg" }, { name: "Aluminum", symbol: "Al" }, { name: "Silicon", symbol: "Si" }, { name: "Phosphorus", symbol: "P" }, { name: "Sulfur", symbol: "S" }, { name: "Chlorine", symbol: "Cl" }, { name: "Argon", symbol: "Ar" }, { name: "Potassium", symbol: "K" }, { name: "Calcium", symbol: "Ca" }, { name: "Scandium", symbol: "Sc" }, { name: "Titanium", symbol: "Ti" }, { name: "Vanadium", symbol: "V" }, { name: "Chromium", symbol: "Cr" }, { name: "Manganese", symbol: "Mn" }, { name: "Iron", symbol: "Fe" }, { name: "Cobalt", symbol: "Co" }, { name: "Nickel", symbol: "Ni" }, { name: "Copper", symbol: "Cu" }, { name: "Zinc", symbol: "Zn" }, { name: "Gallium", symbol: "Ga" }, { name: "Germanium", symbol: "Ge" }, { name: "Arsenic", symbol: "As" }, { name: "Selenium", symbol: "Se" }, { name: "Bromine", symbol: "Br" }, { name: "Krypton", symbol: "Kr" }, { name: "Rubidium", symbol: "Rb" }, { name: "Strontium", symbol: "Sr" }, { name: "Yttrium", symbol: "Y" }, { name: "Zirconium", symbol: "Zr" }, { name: "Niobium", symbol: "Nb" }, { name: "Molybdenum", symbol: "Mo" }, { name: "Technetium", symbol: "Tc" }, { name: "Ruthenium", symbol: "Ru" }, { name: "Rhodium", symbol: "Rh" }, { name: "Palladium", symbol: "Pd" }, { name: "Silver", symbol: "Ag" }, { name: "Cadmium", symbol: "Cd" }, { name: "Indium", symbol: "In" }, { name: "Tin", symbol: "Sn" }, { name: "Antimony", symbol: "Sb" }, { name: "Tellurium", symbol: "Te" }, { name: "Iodine", symbol: "I" }, { name: "Xenon", symbol: "Xe" }, { name: "Cesium", symbol: "Cs" }, { name: "Barium", symbol: "Ba" }, { name: "Lanthanum", symbol: "La" }, { name: "Cerium", symbol: "Ce" }, { name: "Praseodymium", symbol: "Pr" }, { name: "Neodymium", symbol: "Nd" }, { name: "Promethium", symbol: "Pm" }, { name: "Samarium", symbol: "Sm" }, { name: "Europium", symbol: "Eu" }, { name: "Gadolinium", symbol: "Gd" }, { name: "Terbium", symbol: "Tb" }, { name: "Dysprosium", symbol: "Dy" }, { name: "Holmium", symbol: "Ho" }, { name: "Erbium", symbol: "Er" }, { name: "Thulium", symbol: "Tm" }, { name: "Ytterbium", symbol: "Yb" }, { name: "Lutetium", symbol: "Lu" }, { name: "Hafnium", symbol: "Hf" }, { name: "Tantalum", symbol: "Ta" }, { name: "Tungsten", symbol: "W" }, { name: "Rhenium", symbol: "Re" }, { name: "Osmium", symbol: "Os" }, { name: "Iridium", symbol: "Ir" }, { name: "Platinum", symbol: "Pt" }, { name: "Gold", symbol: "Au" }, { name: "Mercury", symbol: "Hg" }, { name: "Thallium", symbol: "Tl" }, { name: "Lead", symbol: "Pb" }, { name: "Bismuth", symbol: "Bi" }, { name: "Polonium", symbol: "Po" }, { name: "Astatine", symbol: "At" }, { name: "Radon", symbol: "Rn" }, { name: "Francium", symbol: "Fr" }, { name: "Radium", symbol: "Ra" }, { name: "Actinium", symbol: "Ac" }, { name: "Thorium", symbol: "Th" }, { name: "Protactinium", symbol: "Pa" }, { name: "Uranium", symbol: "U" }];
+        const elements = [ { atomicNumber: 1, name: "Hydrogen", symbol: "H" }, { atomicNumber: 2, name: "Helium", symbol: "He" }, { atomicNumber: 3, name: "Lithium", symbol: "Li" }, { atomicNumber: 4, name: "Beryllium", symbol: "Be" }, { atomicNumber: 5, name: "Boron", symbol: "B" }, { atomicNumber: 6, name: "Carbon", symbol: "C" }, { atomicNumber: 7, name: "Nitrogen", symbol: "N" }, { atomicNumber: 8, name: "Oxygen", symbol: "O" }, { atomicNumber: 9, name: "Fluorine", symbol: "F" }, { atomicNumber: 10, name: "Neon", symbol: "Ne" }, { atomicNumber: 11, name: "Sodium", symbol: "Na" }, { atomicNumber: 12, name: "Magnesium", symbol: "Mg" }, { atomicNumber: 13, name: "Aluminum", symbol: "Al" }, { atomicNumber: 14, name: "Silicon", symbol: "Si" }, { atomicNumber: 15, name: "Phosphorus", symbol: "P" }, { atomicNumber: 16, name: "Sulfur", symbol: "S" }, { atomicNumber: 17, name: "Chlorine", symbol: "Cl" }, { atomicNumber: 18, name: "Argon", symbol: "Ar" }, { atomicNumber: 19, name: "Potassium", symbol: "K" }, { atomicNumber: 20, name: "Calcium", symbol: "Ca" }, { atomicNumber: 21, name: "Scandium", symbol: "Sc" }, { atomicNumber: 22, name: "Titanium", symbol: "Ti" }, { atomicNumber: 23, name: "Vanadium", symbol: "V" }, { atomicNumber: 24, name: "Chromium", symbol: "Cr" }, { atomicNumber: 25, name: "Manganese", symbol: "Mn" }, { atomicNumber: 26, name: "Iron", symbol: "Fe" }, { atomicNumber: 27, name: "Cobalt", symbol: "Co" }, { atomicNumber: 28, name: "Nickel", symbol: "Ni" }, { atomicNumber: 29, name: "Copper", symbol: "Cu" }, { atomicNumber: 30, name: "Zinc", symbol: "Zn" }, { atomicNumber: 31, name: "Gallium", symbol: "Ga" }, { atomicNumber: 32, name: "Germanium", symbol: "Ge" }, { atomicNumber: 33, name: "Arsenic", symbol: "As" }, { atomicNumber: 34, name: "Selenium", symbol: "Se" }, { atomicNumber: 35, name: "Bromine", symbol: "Br" }, { atomicNumber: 36, name: "Krypton", symbol: "Kr" }, { atomicNumber: 37, name: "Rubidium", symbol: "Rb" }, { atomicNumber: 38, name: "Strontium", symbol: "Sr" }, { atomicNumber: 39, name: "Yttrium", symbol: "Y" }, { atomicNumber: 40, name: "Zirconium", symbol: "Zr" }, { atomicNumber: 41, name: "Niobium", symbol: "Nb" }, { atomicNumber: 42, name: "Molybdenum", symbol: "Mo" }, { atomicNumber: 43, name: "Technetium", symbol: "Tc" }, { atomicNumber: 44, name: "Ruthenium", symbol: "Ru" }, { atomicNumber: 45, name: "Rhodium", symbol: "Rh" }, { atomicNumber: 46, name: "Palladium", symbol: "Pd" }, { atomicNumber: 47, name: "Silver", symbol: "Ag" }, { atomicNumber: 48, name: "Cadmium", symbol: "Cd" }, { atomicNumber: 49, name: "Indium", symbol: "In" }, { atomicNumber: 50, name: "Tin", symbol: "Sn" }, { atomicNumber: 51, name: "Antimony", symbol: "Sb" }, { atomicNumber: 52, name: "Tellurium", symbol: "Te" }, { atomicNumber: 53, name: "Iodine", symbol: "I" }, { atomicNumber: 54, name: "Xenon", symbol: "Xe" }, { atomicNumber: 55, name: "Cesium", symbol: "Cs" }, { atomicNumber: 56, name: "Barium", symbol: "Ba" }, { atomicNumber: 57, name: "Lanthanum", symbol: "La" }, { atomicNumber: 58, name: "Cerium", symbol: "Ce" }, { atomicNumber: 59, name: "Praseodymium", symbol: "Pr" }, { atomicNumber: 60, name: "Neodymium", symbol: "Nd" }, { atomicNumber: 61, name: "Promethium", symbol: "Pm" }, { atomicNumber: 62, name: "Samarium", symbol: "Sm" }, { atomicNumber: 63, name: "Europium", symbol: "Eu" }, { atomicNumber: 64, name: "Gadolinium", symbol: "Gd" }, { atomicNumber: 65, name: "Terbium", symbol: "Tb" }, { atomicNumber: 66, name: "Dysprosium", symbol: "Dy" }, { atomicNumber: 67, name: "Holmium", symbol: "Ho" }, { atomicNumber: 68, name: "Erbium", symbol: "Er" }, { atomicNumber: 69, name: "Thulium", symbol: "Tm" }, { atomicNumber: 70, name: "Ytterbium", symbol: "Yb" }, { atomicNumber: 71, name: "Lutetium", symbol: "Lu" }, { atomicNumber: 72, name: "Hafnium", symbol: "Hf" }, { atomicNumber: 73, name: "Tantalum", symbol: "Ta" }, { atomicNumber: 74, name: "Tungsten", symbol: "W" }, { atomicNumber: 75, name: "Rhenium", symbol: "Re" }, { atomicNumber: 76, name: "Osmium", symbol: "Os" }, { atomicNumber: 77, name: "Iridium", symbol: "Ir" }, { atomicNumber: 78, name: "Platinum", symbol: "Pt" }, { atomicNumber: 79, name: "Gold", symbol: "Au" }, { atomicNumber: 80, name: "Mercury", symbol: "Hg" }, { atomicNumber: 81, name: "Thallium", symbol: "Tl" }, { atomicNumber: 82, name: "Lead", symbol: "Pb" }, { atomicNumber: 83, name: "Bismuth", symbol: "Bi" }, { atomicNumber: 84, name: "Polonium", symbol: "Po" }, { atomicNumber: 85, name: "Astatine", symbol: "At" }, { atomicNumber: 86, name: "Radon", symbol: "Rn" }, { atomicNumber: 87, name: "Francium", symbol: "Fr" }, { atomicNumber: 88, name: "Radium", symbol: "Ra" }, { atomicNumber: 89, name: "Actinium", symbol: "Ac" }, { atomicNumber: 90, name: "Thorium", symbol: "Th" }, { atomicNumber: 91, name: "Protactinium", symbol: "Pa" }, { atomicNumber: 92, name: "Uranium", symbol: "U" }];
 
-        const selectionContainer = document.getElementById('selection-container');
-        const startQuizForm = document.getElementById('start-quiz-form');
-        const startSelect = document.getElementById('start-element-select');
-        const endSelect = document.getElementById('end-element-select');
-        const quizBox = document.getElementById('quiz-box');
-        const completionScreen = document.getElementById('completion-screen');
-        const progressCounter = document.getElementById('progress-counter');
-        const questionPrompt = document.getElementById('question-prompt');
-        const questionElement = document.getElementById('question-element');
-        const answerForm = document.getElementById('answer-form');
-        const answerInput = document.getElementById('answer-input');
-        const checkButton = document.getElementById('check-button');
-        const feedbackMessage = document.getElementById('feedback-message');
-        const continuePrompt = document.getElementById('continue-prompt');
-        const restartButton = document.getElementById('restart-button');
-
-        let quizElements = [];
-        let currentElement = null;
-        let questionType = 'name';
-        let totalElementsInQuiz = 0;
-        let quizDirection = 'random';
-        let isWaitingForContinue = false;
+        const selectionContainer = document.getElementById('selection-container'), startQuizForm = document.getElementById('start-quiz-form'), startSelect = document.getElementById('start-element-select'), endSelect = document.getElementById('end-element-select'), quizBox = document.getElementById('quiz-box'), completionScreen = document.getElementById('completion-screen'), progressCounter = document.getElementById('progress-counter'), questionPrompt = document.getElementById('question-prompt'), questionElement = document.getElementById('question-element'), answerForm = document.getElementById('answer-form'), answerInput = document.getElementById('answer-input'), checkButton = document.getElementById('check-button'), hintButton = document.getElementById('hint-button'), feedbackMessage = document.getElementById('feedback-message'), continuePrompt = document.getElementById('continue-prompt'), restartButton = document.getElementById('restart-button');
+        let quizElements = [], currentElement = null, questionType = 'name', totalElementsInQuiz = 0, quizDirection = 'random', isWaitingForContinue = false;
 
         function populateDropdowns() {
-            elements.forEach((el, index) => {
-                const optionText = `${index + 1}. ${el.name} (${el.symbol})`;
-                const startOption = new Option(optionText, index);
-                const endOption = new Option(optionText, index);
-                startSelect.add(startOption);
-                endSelect.add(endOption);
+            elements.forEach((el) => {
+                const optionText = `${el.atomicNumber}. ${el.name} (${el.symbol})`;
+                startSelect.add(new Option(optionText, el.atomicNumber - 1));
+                endSelect.add(new Option(optionText, el.atomicNumber - 1));
             });
             endSelect.value = elements.length - 1;
         }
 
         function handleQuizStart(event) {
             event.preventDefault();
-            let startIndex = parseInt(startSelect.value);
-            let endIndex = parseInt(endSelect.value);
+            let startIndex = parseInt(startSelect.value), endIndex = parseInt(endSelect.value);
             if (startIndex > endIndex) [startIndex, endIndex] = [endIndex, startIndex];
-            
             const selectedElements = elements.slice(startIndex, endIndex + 1);
             quizDirection = document.querySelector('input[name="quiz-direction"]:checked').value;
             startGame(selectedElements);
@@ -210,81 +174,75 @@
         }
 
         function nextQuestion() {
-            if (quizElements.length === 0) {
-                endGame();
-                return;
-            }
-
-            // Reset UI state from previous question
+            if (quizElements.length === 0) { endGame(); return; }
             isWaitingForContinue = false;
             feedbackMessage.innerHTML = '';
             continuePrompt.style.display = 'none';
             checkButton.textContent = 'Check';
             answerInput.disabled = false;
+            hintButton.disabled = false;
             answerInput.value = '';
-
             progressCounter.textContent = `${quizElements.length} / ${totalElementsInQuiz} elements remaining`;
-
-            const randomIndex = Math.floor(Math.random() * quizElements.length);
-            currentElement = quizElements[randomIndex];
-
+            currentElement = quizElements[Math.floor(Math.random() * quizElements.length)];
             if (quizDirection === 'random') questionType = Math.random() < 0.5 ? 'name' : 'symbol';
             else if (quizDirection === 'name-to-symbol') questionType = 'name';
             else questionType = 'symbol';
-
-            if (questionType === 'name') {
-                questionPrompt.textContent = 'What is the symbol for...';
-                questionElement.textContent = currentElement.name;
-            } else {
-                questionPrompt.textContent = 'What is the name for...';
-                questionElement.textContent = currentElement.symbol;
-            }
+            questionPrompt.textContent = questionType === 'name' ? 'What is the symbol for...' : 'What is the name for...';
+            questionElement.textContent = questionType === 'name' ? currentElement.name : currentElement.symbol;
             answerInput.focus();
         }
 
         function checkAnswer(event) {
             event.preventDefault();
-            
-            // If we are waiting for user to continue, just go to the next question.
-            if (isWaitingForContinue) {
-                nextQuestion();
-                return;
-            }
-
+            if (isWaitingForContinue) { nextQuestion(); return; }
             const userAnswer = answerInput.value.trim();
             if (!userAnswer) return;
-
-            const isCorrect = (questionType === 'name')
-                ? userAnswer.toLowerCase() === currentElement.symbol.toLowerCase()
-                : userAnswer.toLowerCase() === currentElement.name.toLowerCase();
-
+            const isCorrect = (questionType === 'name') ? userAnswer.toLowerCase() === currentElement.symbol.toLowerCase() : userAnswer.toLowerCase() === currentElement.name.toLowerCase();
             if (isCorrect) {
                 feedbackMessage.innerHTML = `<span class="correct">Correct!</span>`;
                 quizElements = quizElements.filter(el => el.symbol !== currentElement.symbol);
-                answerInput.disabled = true; // Briefly disable input
-                setTimeout(nextQuestion, 600); // Faster transition
+                answerInput.disabled = true; hintButton.disabled = true;
+                setTimeout(nextQuestion, 600);
             } else {
                 feedbackMessage.innerHTML = `<span class="incorrect">Incorrect. The answer is ${currentElement.name} (${currentElement.symbol}).</span>`;
                 isWaitingForContinue = true;
-                answerInput.disabled = true;
+                answerInput.disabled = true; hintButton.disabled = true;
                 checkButton.textContent = 'Continue';
                 continuePrompt.style.display = 'block';
-                checkButton.focus(); // Focus button so Enter works
+                checkButton.focus();
             }
         }
         
-        function endGame() {
-            quizBox.style.display = 'none';
-            completionScreen.style.display = 'flex';
+        // --- UPDATED HINT LOGIC IS HERE ---
+        function showHint() {
+            if (currentElement && !isWaitingForContinue) {
+                let hintText = '';
+
+                // If the question is a name, the user needs to guess the symbol.
+                if (questionType === 'name') {
+                    const symbolLength = currentElement.symbol.length;
+                    hintText = `Hint: The symbol is ${symbolLength} letter${symbolLength > 1 ? 's' : ''} long.`;
+                } 
+                // If the question is a symbol, the user needs to guess the name.
+                else {
+                    const elementName = currentElement.name;
+                    // Show 2 letters for longer names, 1 for shorter names.
+                    const hintPrefix = elementName.substring(0, elementName.length >= 5 ? 2 : 1);
+                    hintText = `Hint: The name starts with "${hintPrefix}...".`;
+                }
+
+                feedbackMessage.innerHTML = `<span class="hint-message">${hintText}</span>`;
+                hintButton.disabled = true;
+                answerInput.focus();
+            }
         }
-        
-        function resetToSelection() {
-            completionScreen.style.display = 'none';
-            selectionContainer.style.display = 'block';
-        }
+
+        function endGame() { quizBox.style.display = 'none'; completionScreen.style.display = 'flex'; }
+        function resetToSelection() { completionScreen.style.display = 'none'; selectionContainer.style.display = 'block'; }
 
         startQuizForm.addEventListener('submit', handleQuizStart);
         answerForm.addEventListener('submit', checkAnswer);
+        hintButton.addEventListener('click', showHint);
         restartButton.addEventListener('click', resetToSelection);
 
         populateDropdowns();
